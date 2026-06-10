@@ -8,7 +8,7 @@
 
 // ── Constants ─────────────────────────────────────────────────
 const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
 
 const LS = {
   API_KEY : 'styleai_apikey',
