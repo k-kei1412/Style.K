@@ -90,12 +90,16 @@ async function callGemini(prompt, base64 = null, mime = 'image/jpeg') {
 }
 
 async function analyzeClothingImage(base64, mime) {
-  const prompt = `この服の画像を分析して、以下のJSONのみを返してください（コードブロック・余分なテキスト不要）：
+  const prompt = `この画像を分析してください。服の写真、またはブランドタグ・素材表示タグ・洗濯表示タグが写っている場合があります。
+画像に写っているすべての情報（服のデザイン・色・ブランドロゴ・タグのテキスト）を読み取り、以下のJSONのみを返してください（コードブロック・余分なテキスト不要）：
 {
   "type": "カテゴリ（トップス/ボトムス/アウター/ワンピース/靴/バッグ/アクセサリー/その他）",
   "subType": "詳細カテゴリ（例: Tシャツ、チノパン、トレンチコートなど）",
+  "brand": "ブランド名（タグやロゴから読み取れる場合。不明なら空文字）",
   "colors": ["主色", "サブ色（あれば）"],
-  "material": "素材（例: コットン、ウール）",
+  "material": "素材の概要（例: コットン、ウール混）",
+  "materialComposition": "素材組成（タグから読み取れる場合。例: 綿100%、ポリエステル60% 綿40%。不明なら空文字）",
+  "careInstructions": ["洗濯・ケア方法（タグから読み取れるもの。例: 手洗い可、乾燥機不可、ドライクリーニング）。不明なら空配列"],
   "seasons": ["春","夏","秋","冬"のうち適切なもの],
   "style": "スタイル（カジュアル/フォーマル/スポーティ/フェミニン/モード/ストリート）",
   "tags": ["特徴タグ1","タグ2","タグ3"],
@@ -109,9 +113,10 @@ async function analyzeClothingImage(base64, mime) {
 
 async function generateCoordinate(profile, clothes, tpo, season, style, extra) {
   const clothesList = clothes.length
-    ? clothes.map(c =>
-        `- [${c.id}] ${c.info.type}(${c.info.subType ?? ''}) 色:${(c.info.colors??[]).join('/')} スタイル:${c.info.style} 季節:${(c.info.seasons??[]).join('/')} "${c.info.description}"`
-      ).join('\n')
+    ? clothes.map(c => {
+        const brandPart = c.info.brand ? ` ブランド:${c.info.brand}` : '';
+        return `- [${c.id}] ${c.info.type}(${c.info.subType ?? ''})${brandPart} 色:${(c.info.colors??[]).join('/')} スタイル:${c.info.style} 季節:${(c.info.seasons??[]).join('/')} "${c.info.description}"`;
+      }).join('\n')
     : '（服が未登録）';
 
   const profileStr = [
@@ -301,8 +306,11 @@ function initClosetTab() {
 
   const uploadArea  = document.getElementById('uploadArea');
   const imageUpload = document.getElementById('imageUpload');
+  const cameraInput = document.getElementById('cameraInput');
 
-  uploadArea.addEventListener('click', () => imageUpload.click());
+  document.getElementById('cameraBtn').addEventListener('click', () => cameraInput.click());
+  document.getElementById('galleryBtn').addEventListener('click', () => imageUpload.click());
+
   uploadArea.addEventListener('dragover', e => {
     e.preventDefault();
     uploadArea.classList.add('upload-drag');
@@ -315,7 +323,9 @@ function initClosetTab() {
     uploadArea.classList.remove('upload-drag');
     handleFiles(e.dataTransfer.files);
   });
+
   imageUpload.addEventListener('change', e => handleFiles(e.target.files));
+  cameraInput.addEventListener('change', e => handleFiles(e.target.files));
   document.getElementById('analyzeBtn').addEventListener('click', runAnalysis);
 }
 
@@ -462,8 +472,16 @@ function openItemModal(id) {
       </div>
     </div>
     <div class="space-y-1.5 text-sm">
+      ${info?.brand ? `<div><span class="text-gray-400 text-xs">ブランド：</span><span class="font-medium">${escHtml(info.brand)}</span></div>` : ''}
       <div><span class="text-gray-400 text-xs">色：</span>${escHtml((info?.colors ?? []).join(', ') || '−')}</div>
       <div><span class="text-gray-400 text-xs">素材：</span>${escHtml(info?.material || '−')}</div>
+      ${info?.materialComposition ? `<div><span class="text-gray-400 text-xs">素材組成：</span>${escHtml(info.materialComposition)}</div>` : ''}
+      ${(info?.careInstructions ?? []).length ? `<div>
+        <span class="text-gray-400 text-xs">ケア：</span>
+        <div class="flex flex-wrap gap-1 mt-1">
+          ${info.careInstructions.map(c => `<span class="tag-care">${escHtml(c)}</span>`).join('')}
+        </div>
+      </div>` : ''}
       <div><span class="text-gray-400 text-xs">スタイル：</span>${escHtml(info?.style || '−')}</div>
       <div><span class="text-gray-400 text-xs">説明：</span>${escHtml(info?.description || '−')}</div>
       <div>

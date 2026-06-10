@@ -193,13 +193,32 @@
       <!-- Upload -->
       <div class="card">
         <h2 class="section-title"><i class="fas fa-cloud-upload-alt mr-2 text-violet-500"></i>服を追加する</h2>
-        <div id="uploadArea"
-          class="mt-3 border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-all">
-          <input type="file" id="imageUpload" class="hidden" accept="image/*" multiple />
-          <div class="text-4xl mb-2">📷</div>
-          <p class="text-sm font-medium text-gray-600">クリックまたはドラッグで画像をアップロード</p>
-          <p class="text-xs text-gray-400 mt-1">AIが服の種類・色・素材・季節を自動分析します</p>
+
+        <!-- Hidden file inputs -->
+        <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment" />
+        <input type="file" id="imageUpload" class="hidden" accept="image/*" multiple />
+
+        <!-- Action buttons -->
+        <div class="grid grid-cols-2 gap-3 mt-3">
+          <button id="cameraBtn" class="upload-method-btn">
+            <i class="fas fa-camera text-2xl mb-1 text-violet-500"></i>
+            <span class="text-sm font-medium text-gray-700">カメラで撮影</span>
+            <span class="text-xs text-gray-400">服・ブランドタグを撮影</span>
+          </button>
+          <button id="galleryBtn" class="upload-method-btn">
+            <i class="fas fa-images text-2xl mb-1 text-violet-500"></i>
+            <span class="text-sm font-medium text-gray-700">写真を選択</span>
+            <span class="text-xs text-gray-400">ギャラリーから複数選択</span>
+          </button>
         </div>
+
+        <!-- Drop zone -->
+        <div id="uploadArea"
+          class="mt-3 border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-violet-400 hover:bg-violet-50 transition-all">
+          <p class="text-xs text-gray-400">ドラッグ＆ドロップでも追加できます</p>
+          <p class="text-xs text-gray-400 mt-0.5">ブランドタグ・素材タグも自動で読み取ります</p>
+        </div>
+
         <div id="uploadPreview" class="mt-4" style="display:none">
           <div id="previewRow" class="flex gap-3 overflow-x-auto pb-1"></div>
           <button id="analyzeBtn" class="btn-primary w-full mt-3">

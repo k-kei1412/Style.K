@@ -279,6 +279,31 @@ button, label, select, input, textarea, a {
   padding: 0.5rem;
 }
 
+/* ── Upload method buttons (Camera / Gallery) ── */
+.upload-method-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: 1rem 0.5rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.upload-method-btn:hover {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+}
+.upload-method-btn:active {
+  background: #f3e8ff;
+  border-color: #9333ea;
+}
+
 /* ── Upload drag-over state ── */
 .upload-drag {
   border-color: #8b5cf6 !important;
@@ -385,6 +410,16 @@ button, label, select, input, textarea, a {
   font-size: 0.75rem;
   background: #faf5ff;
   color: #7c3aed;
+  border-radius: 999px;
+}
+
+/* 服の詳細モーダル: ケア・洗濯表示タグ */
+.tag-care {
+  display: inline-flex;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  background: #f0fdf4;
+  color: #16a34a;
   border-radius: 999px;
 }
 
