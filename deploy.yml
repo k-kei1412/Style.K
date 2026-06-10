@@ -1,0 +1,129 @@
+name: Deploy StyleAI to GitHub Pages
+
+# ─── トリガー ───────────────────────────────────────────────
+on:
+  push:
+    branches: [main]       # main への push で自動デプロイ
+  pull_request:
+    branches: [main]       # PR では lint のみ実行（deploy はスキップ）
+  workflow_dispatch:        # 手動実行も可能
+
+# ─── 権限（GitHub Pages デプロイに必要） ──────────────────
+permissions:
+  contents: read
+  pages   : write
+  id-token: write
+
+# ─── 同時実行制御 ─────────────────────────────────────────
+concurrency:
+  group            : "pages"
+  cancel-in-progress: false
+
+# ═══════════════════════════════════════════════════════════
+# JOB 1: 静的解析 / セキュリティチェック
+# ═══════════════════════════════════════════════════════════
+jobs:
+  lint:
+    name: "🔍 Lint & Security Check"
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. コードチェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Node.js セットアップ（htmlhint 用）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # 3. HTMLHint インストール & 実行
+      - name: Lint HTML
+        run: |
+          npm install -g htmlhint
+          htmlhint index.html --config '{"tagname-lowercase":true,"attr-lowercase":true,"doctype-first":true}'
+        continue-on-error: true   # lint エラーでもデプロイを止めない
+
+      # 4. ソースコードに API キーが混入していないか確認
+      #    （リポジトリに GEMINI_API_KEY を直書きした場合を防ぐ）
+      - name: Check for exposed API keys
+        run: |
+          echo "Scanning for hardcoded API keys..."
+          if grep -rE 'AIzaSy[0-9A-Za-z_-]{33}' . \
+               --exclude-dir=.git \
+               --include="*.html" --include="*.js" --include="*.ts"; then
+            echo "::error::⚠️  ハードコードされた Gemini API キーが検出されました！"
+            echo "::error::   APIキーをソースコードから削除してください。"
+            exit 1
+          fi
+          echo "✅ No hardcoded API keys detected."
+
+      # 5. ファイル存在確認（必須ファイルが揃っているか）
+      - name: Verify required files
+        run: |
+          for f in index.html app.js style.css; do
+            if [ ! -f "$f" ]; then
+              echo "::error::Required file missing: $f"
+              exit 1
+            fi
+          done
+          echo "✅ All required files present."
+
+  # ═══════════════════════════════════════════════════════════
+  # JOB 2: GitHub Pages へのデプロイ
+  #         main ブランチへの push 時のみ実行
+  # ═══════════════════════════════════════════════════════════
+  deploy:
+    name: "🚀 Deploy to GitHub Pages"
+    runs-on: ubuntu-latest
+    needs: lint                          # lint 完了後に実行
+    if: github.ref == 'refs/heads/main'  # main ブランチのみ
+
+    environment:
+      name: github-pages
+      url : ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 1. コードチェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. GitHub Pages の設定
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # 3. デプロイするファイルをアップロード
+      #    ルートディレクトリ全体（.github フォルダは除外される）
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      # 4. GitHub Pages へデプロイ
+      - name: Deploy to GitHub Pages
+        id  : deployment
+        uses: actions/deploy-pages@v4
+
+      # 5. デプロイ結果をサマリーに出力
+      - name: Output deployment URL
+        run: |
+          echo "## 🎉 デプロイ完了" >> $GITHUB_STEP_SUMMARY
+          echo ""                   >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+          echo ""                   >> $GITHUB_STEP_SUMMARY
+          echo "### セキュリティ注意事項" >> $GITHUB_STEP_SUMMARY
+          echo "- Gemini APIキーはアプリ画面から入力し、ブラウザの localStorage に保存されます" >> $GITHUB_STEP_SUMMARY
+          echo "- APIキーはソースコードやリポジトリには保存されません" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub Repository Secrets の \`GEMINI_API_KEY\` は **使用していません**（フロントエンド直呼び方式のため）" >> $GITHUB_STEP_SUMMARY
+
+# ─── 補足: バックエンドを追加する場合の拡張例 ────────────────
+# バックエンドサーバーを用意して API キーを隠蔽したい場合は、
+# 以下のように環境変数をビルドステップに注入してください:
+#
+#   - name: Build with API key injected
+#     env:
+#       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+#     run: |
+#       # sed 等でビルド時に差し替え（現在は使用しない）
+#       echo "Key available as env var during build only"
