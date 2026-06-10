@@ -8,7 +8,7 @@
 
 // ── Constants ─────────────────────────────────────────────────
 const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 const LS = {
   API_KEY : 'styleai_apikey',
@@ -84,30 +84,55 @@ async function callGemini(prompt, base64 = null, mime = 'image/jpeg') {
   }
 
   const json = await res.json();
-  const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('AIから応答が得られませんでした。');
+  const candidate = json.candidates?.[0];
+  const text = candidate?.content?.parts?.[0]?.text;
+  if (!text) {
+    const reason = candidate?.finishReason ?? 'UNKNOWN';
+    throw new Error(`AIから応答が得られませんでした（finishReason: ${reason}）`);
+  }
   return text;
 }
 
 async function analyzeClothingImage(base64, mime) {
-  const prompt = `この画像を分析してください。服の写真、またはブランドタグ・素材表示タグ・洗濯表示タグが写っている場合があります。
-画像に写っているすべての情報（服のデザイン・色・ブランドロゴ・タグのテキスト）を読み取り、以下のJSONのみを返してください（コードブロック・余分なテキスト不要）：
+  const prompt = `この画像を分析してください。服の写真、またはブランドタグ・素材表示タグ・洗濯表示タグの画像です。
+画像から読み取れるすべての情報（服のデザイン・色・ブランドロゴ・タグのテキスト）をもとに、以下のJSONのみを返してください。
+コードブロック（\`\`\`）や説明文は一切不要です。JSONだけを返してください。
+
 {
-  "type": "カテゴリ（トップス/ボトムス/アウター/ワンピース/靴/バッグ/アクセサリー/その他）",
-  "subType": "詳細カテゴリ（例: Tシャツ、チノパン、トレンチコートなど）",
-  "brand": "ブランド名（タグやロゴから読み取れる場合。不明なら空文字）",
-  "colors": ["主色", "サブ色（あれば）"],
-  "material": "素材の概要（例: コットン、ウール混）",
-  "materialComposition": "素材組成（タグから読み取れる場合。例: 綿100%、ポリエステル60% 綿40%。不明なら空文字）",
-  "careInstructions": ["洗濯・ケア方法（タグから読み取れるもの。例: 手洗い可、乾燥機不可、ドライクリーニング）。不明なら空配列"],
-  "seasons": ["春","夏","秋","冬"のうち適切なもの],
-  "style": "スタイル（カジュアル/フォーマル/スポーティ/フェミニン/モード/ストリート）",
-  "tags": ["特徴タグ1","タグ2","タグ3"],
-  "description": "30文字以内の説明"
-}`;
+  "type": "トップス",
+  "subType": "Tシャツ",
+  "brand": "",
+  "colors": ["白"],
+  "material": "コットン",
+  "materialComposition": "",
+  "careInstructions": [],
+  "seasons": ["春", "夏"],
+  "style": "カジュアル",
+  "tags": ["シンプル"],
+  "description": "白無地のTシャツ"
+}
+
+上記はサンプルです。実際の画像の内容に合わせて各フィールドを埋めてください。
+- type: トップス/ボトムス/アウター/ワンピース/靴/バッグ/アクセサリー/その他 のいずれか
+- brand: タグやロゴから読み取れるブランド名。不明なら空文字
+- materialComposition: タグに素材組成（例: 綿100%）が書いてあれば記入。なければ空文字
+- careInstructions: 洗濯タグから読み取れるケア方法の配列（例: ["手洗い可", "乾燥機不可"]）。不明なら空配列
+- seasons: 服に適した季節を配列で（複数可）
+- style: カジュアル/フォーマル/スポーティ/フェミニン/モード/ストリート のいずれか`;
 
   const raw = await callGemini(prompt, base64, mime);
-  let txt = raw.trim().replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+  let txt = raw.trim()
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/,      '')
+    .replace(/```\s*$/,      '')
+    .trim();
+
+  const firstBrace = txt.indexOf('{');
+  const lastBrace  = txt.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    txt = txt.slice(firstBrace, lastBrace + 1);
+  }
+
   return JSON.parse(txt);
 }
 
@@ -350,7 +375,8 @@ async function runAnalysis() {
   if (!getApiKey()) { openApiKeyModal(); return; }
 
   showLoading('AIが服を分析中…');
-  let ok = 0, ng = 0;
+  let ok = 0;
+  const errors = [];
 
   for (const file of state.pendingFiles) {
     try {
@@ -365,8 +391,8 @@ async function runAnalysis() {
       });
       ok++;
     } catch (e) {
-      console.warn('Analysis failed for file:', file.name, e);
-      ng++;
+      console.error('Analysis failed for file:', file.name, e);
+      errors.push(e.message || String(e));
     }
   }
 
@@ -374,10 +400,15 @@ async function runAnalysis() {
   state.pendingFiles = [];
   document.getElementById('uploadPreview').style.display = 'none';
   document.getElementById('imageUpload').value = '';
+  document.getElementById('cameraInput').value = '';
   renderGrid();
 
-  if (ok > 0) showToast(`${ok}点を追加しました${ng ? `（${ng}点失敗）` : ''}`);
-  else        showToast('分析に失敗しました。APIキーを確認してください', 'err');
+  if (ok > 0) {
+    showToast(`${ok}点を追加しました${errors.length ? `（${errors.length}点失敗）` : ''}`);
+  } else {
+    const reason = errors[0] ?? '不明なエラー';
+    showToast(`分析失敗: ${reason}`, 'err');
+  }
 }
 
 function buildFilterPills() {
