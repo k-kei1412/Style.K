@@ -1,0 +1,312 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StyleAI - AIコーディネート提案</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Noto Sans JP', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 font-sans text-gray-800 antialiased">
+
+  <!-- ===== HEADER ===== -->
+  <header class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">👗</span>
+        <span class="text-lg font-bold tracking-tight">StyleAI</span>
+      </div>
+      <button id="apiKeyBtn"
+        class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+        <i class="fas fa-key text-gray-400"></i>
+        <span id="apiKeyLabel">APIキー未設定</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== NAV TABS ===== -->
+  <nav class="bg-white border-b border-gray-100 sticky top-14 z-40">
+    <div class="max-w-3xl mx-auto px-4 flex">
+      <button class="nav-tab active-tab" data-tab="profile">
+        <i class="fas fa-user text-xs"></i><span>プロフィール</span>
+      </button>
+      <button class="nav-tab" data-tab="closet">
+        <i class="fas fa-shirt text-xs"></i><span>クローゼット</span>
+      </button>
+      <button class="nav-tab" data-tab="coordinate">
+        <i class="fas fa-wand-magic-sparkles text-xs"></i><span>コーデ提案</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN ===== -->
+  <main class="max-w-3xl mx-auto px-4 py-6 space-y-4">
+
+    <!-- ── PROFILE TAB ── -->
+    <div id="profileTab" class="tab-content space-y-4">
+      <div class="card">
+        <h2 class="section-title"><i class="fas fa-user-circle mr-2 text-violet-500"></i>あなたのプロフィール</h2>
+        <p class="text-sm text-gray-400 mb-5">入力情報はすべてブラウザ内にのみ保存されます。</p>
+
+        <!-- 基本情報 -->
+        <div class="grid grid-cols-2 gap-3 mb-5">
+          <div>
+            <label class="form-label">性別</label>
+            <select id="gender" class="form-select">
+              <option value="">選択</option>
+              <option value="女性">女性</option>
+              <option value="男性">男性</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">年代</label>
+            <select id="ageGroup" class="form-select">
+              <option value="">選択</option>
+              <option value="10代">10代</option>
+              <option value="20代">20代</option>
+              <option value="30代">30代</option>
+              <option value="40代">40代</option>
+              <option value="50代以上">50代以上</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 骨格 -->
+        <div class="mb-5">
+          <label class="form-label mb-2">骨格タイプ</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="radio-card-label">
+              <input type="radio" name="skeletonType" value="ストレート" class="sr-only" />
+              <div class="radio-card">
+                <span class="text-xl">🏋️</span>
+                <span class="font-medium text-sm">ストレート</span>
+                <span class="text-xs text-gray-400">メリハリ</span>
+              </div>
+            </label>
+            <label class="radio-card-label">
+              <input type="radio" name="skeletonType" value="ウェーブ" class="sr-only" />
+              <div class="radio-card">
+                <span class="text-xl">🌊</span>
+                <span class="font-medium text-sm">ウェーブ</span>
+                <span class="text-xs text-gray-400">曲線的</span>
+              </div>
+            </label>
+            <label class="radio-card-label">
+              <input type="radio" name="skeletonType" value="ナチュラル" class="sr-only" />
+              <div class="radio-card">
+                <span class="text-xl">🌿</span>
+                <span class="font-medium text-sm">ナチュラル</span>
+                <span class="text-xs text-gray-400">フレーム</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- パーソナルカラー -->
+        <div class="mb-5">
+          <label class="form-label mb-2">パーソナルカラー</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="radio-card-label">
+              <input type="radio" name="personalColor" value="スプリング" class="sr-only" />
+              <div class="radio-card flex-row justify-start gap-3">
+                <div class="w-8 h-8 rounded-full flex-shrink-0 bg-gradient-to-br from-yellow-300 to-pink-300 shadow-sm"></div>
+                <div><p class="font-medium text-sm">スプリング</p><p class="text-xs text-gray-400">明るく暖かみ</p></div>
+              </div>
+            </label>
+            <label class="radio-card-label">
+              <input type="radio" name="personalColor" value="サマー" class="sr-only" />
+              <div class="radio-card flex-row justify-start gap-3">
+                <div class="w-8 h-8 rounded-full flex-shrink-0 bg-gradient-to-br from-blue-200 to-purple-300 shadow-sm"></div>
+                <div><p class="font-medium text-sm">サマー</p><p class="text-xs text-gray-400">柔らか涼しげ</p></div>
+              </div>
+            </label>
+            <label class="radio-card-label">
+              <input type="radio" name="personalColor" value="オータム" class="sr-only" />
+              <div class="radio-card flex-row justify-start gap-3">
+                <div class="w-8 h-8 rounded-full flex-shrink-0 bg-gradient-to-br from-orange-400 to-red-500 shadow-sm"></div>
+                <div><p class="font-medium text-sm">オータム</p><p class="text-xs text-gray-400">深みある暖色</p></div>
+              </div>
+            </label>
+            <label class="radio-card-label">
+              <input type="radio" name="personalColor" value="ウィンター" class="sr-only" />
+              <div class="radio-card flex-row justify-start gap-3">
+                <div class="w-8 h-8 rounded-full flex-shrink-0 bg-gradient-to-br from-blue-600 to-gray-800 shadow-sm"></div>
+                <div><p class="font-medium text-sm">ウィンター</p><p class="text-xs text-gray-400">クールで鮮やか</p></div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 体型 -->
+        <div class="mb-5">
+          <label class="form-label mb-2">体型</label>
+          <div class="grid grid-cols-4 gap-2 body-type-grid">
+            <label class="radio-card-label"><input type="radio" name="bodyType" value="スリム" class="sr-only" /><div class="radio-card text-sm">スリム</div></label>
+            <label class="radio-card-label"><input type="radio" name="bodyType" value="標準" class="sr-only" /><div class="radio-card text-sm">標準</div></label>
+            <label class="radio-card-label"><input type="radio" name="bodyType" value="グラマー" class="sr-only" /><div class="radio-card text-sm">グラマー</div></label>
+            <label class="radio-card-label"><input type="radio" name="bodyType" value="筋肉質" class="sr-only" /><div class="radio-card text-sm">筋肉質</div></label>
+          </div>
+        </div>
+
+        <!-- スタイルの好み -->
+        <div class="mb-5">
+          <label class="form-label mb-2">スタイルの好み（複数選択可）</label>
+          <div id="stylePreferenceChips" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- 身長 / メモ -->
+        <div class="grid grid-cols-2 gap-3 mb-5">
+          <div>
+            <label class="form-label">身長 (cm)</label>
+            <input id="height" type="number" placeholder="例: 165"
+              class="form-input" />
+          </div>
+          <div>
+            <label class="form-label">メモ</label>
+            <input id="profileNote" type="text" placeholder="例: 肩幅が広め"
+              class="form-input" />
+          </div>
+        </div>
+
+        <button id="saveProfileBtn" class="btn-primary w-full">
+          <i class="fas fa-save mr-2"></i>プロフィールを保存
+        </button>
+      </div>
+    </div>
+
+    <!-- ── CLOSET TAB ── -->
+    <div id="closetTab" class="tab-content space-y-4" style="display:none">
+
+      <!-- Upload -->
+      <div class="card">
+        <h2 class="section-title"><i class="fas fa-cloud-upload-alt mr-2 text-violet-500"></i>服を追加する</h2>
+        <div id="uploadArea"
+          class="mt-3 border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-all">
+          <input type="file" id="imageUpload" class="hidden" accept="image/*" multiple />
+          <div class="text-4xl mb-2">📷</div>
+          <p class="text-sm font-medium text-gray-600">クリックまたはドラッグで画像をアップロード</p>
+          <p class="text-xs text-gray-400 mt-1">AIが服の種類・色・素材・季節を自動分析します</p>
+        </div>
+        <div id="uploadPreview" class="mt-4" style="display:none">
+          <div id="previewRow" class="flex gap-3 overflow-x-auto pb-1"></div>
+          <button id="analyzeBtn" class="btn-primary w-full mt-3">
+            <i class="fas fa-magic mr-2"></i>AIで分析してクローゼットに追加
+          </button>
+        </div>
+      </div>
+
+      <!-- Closet Grid -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="section-title mb-0"><i class="fas fa-shirt mr-2 text-violet-500"></i>クローゼット</h2>
+          <span id="clothesCount" class="text-sm text-gray-400">0 点</span>
+        </div>
+        <div id="filterRow" class="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar"></div>
+        <div id="clothesGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+        <div id="emptyCloset" class="text-center py-14 text-gray-300" style="display:none">
+          <div class="text-5xl mb-3">👔</div>
+          <p class="text-sm">まだ服が登録されていません</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COORDINATE TAB ── -->
+    <div id="coordinateTab" class="tab-content space-y-4" style="display:none">
+
+      <div class="card">
+        <h2 class="section-title"><i class="fas fa-sparkles mr-2 text-violet-500"></i>コーディネート条件</h2>
+
+        <div class="mb-4">
+          <label class="form-label mb-2">TPO・シーン</label>
+          <div id="tpoGrid" class="grid grid-cols-3 gap-2"></div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label mb-2">季節</label>
+          <div id="seasonGrid" class="grid grid-cols-4 gap-2"></div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label mb-2">スタイル</label>
+          <div id="styleGrid" class="grid grid-cols-3 gap-2"></div>
+        </div>
+
+        <div class="mb-5">
+          <label class="form-label mb-1">追加リクエスト（任意）</label>
+          <textarea id="extraRequest" rows="2" placeholder="例: 今日は大事なプレゼンがあるのでフォーマルに…"
+            class="form-input resize-none"></textarea>
+        </div>
+
+        <button id="generateBtn" class="w-full py-3 rounded-xl text-white font-semibold text-sm
+          bg-gradient-to-r from-violet-600 to-pink-500 hover:opacity-90 transition-opacity
+          flex items-center justify-center gap-2 shadow-md shadow-violet-200">
+          <i class="fas fa-wand-magic-sparkles"></i>
+          AIコーディネートを提案してもらう
+        </button>
+      </div>
+
+      <div id="coordResults" style="display:none"></div>
+    </div>
+
+  </main>
+
+  <!-- ===== MODALS ===== -->
+
+  <!-- API Key Modal -->
+  <div id="apiKeyModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <h3 class="text-base font-bold mb-1">🔑 Gemini APIキーの設定</h3>
+      <p class="text-xs text-gray-400 mb-4 leading-relaxed">
+        Google AI Studio でAPIキーを発行してください。<br />
+        入力したキーはブラウザの <code class="bg-gray-100 px-1 rounded">localStorage</code> のみに保存され、
+        Google以外のサーバーへは送信されません。
+      </p>
+      <input id="apiKeyInput" type="password" placeholder="AIzaSy..."
+        class="form-input mb-3" />
+      <div class="flex gap-2">
+        <button id="saveApiKey" class="btn-primary flex-1">保存</button>
+        <button id="cancelApiKey" class="btn-ghost flex-1">キャンセル</button>
+      </div>
+      <p class="text-xs text-gray-300 text-center mt-3">
+        <i class="fas fa-lock mr-1"></i>ローカル保存のみ・外部送信なし
+      </p>
+    </div>
+  </div>
+
+  <!-- Clothes Detail Modal -->
+  <div id="itemModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <div id="itemModalBody"></div>
+      <button id="closeItemModal" class="btn-ghost w-full mt-4">閉じる</button>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center" style="display:none">
+    <div class="bg-white rounded-2xl px-10 py-8 flex flex-col items-center gap-4 shadow-2xl">
+      <div class="spinner"></div>
+      <p id="loadingMsg" class="text-sm font-medium text-gray-700">処理中...</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[70] hidden">
+    <div id="toastInner" class="px-5 py-3 rounded-xl text-sm shadow-lg text-white font-medium"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
